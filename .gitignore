@@ -1,0 +1,46 @@
+
+# Secrets and environment variables
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+.venv/
+*.egg-info/
+
+# Local databases and generated data
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs and temporary files
+*.log
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Vector database / local indexes
+qdrant_storage/
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Frontend dependencies and build output
+frontend/node_modules/
+frontend/dist/
+
+# Environment files
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+
+# Local repository clones and vector database data
+data/repos/
+data/qdrant/
