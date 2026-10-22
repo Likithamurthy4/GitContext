@@ -156,3 +156,43 @@ def test_ask_converts_gemini_quota_error_to_429(monkeypatch):
 
     assert response.status_code == 429
     assert "quota exceeded" in response.json()["detail"]
+
+def test_ask_converts_gemini_unavailable_error_to_503(monkeypatch):
+    class FakeHybrid:
+        def search(self, question, limit, candidate_limit):
+            return []
+
+    class FakeReranker:
+        def rerank(self, question, candidates, limit):
+            return []
+
+    class FakeGenerator:
+        def generate(self, question, chunks):
+            raise RuntimeError(
+                "503 UNAVAILABLE: model is experiencing high demand"
+            )
+
+    monkeypatch.setattr(
+        main,
+        "build_repository_context",
+        lambda repo_url, app: {"hybrid": FakeHybrid()},
+    )
+
+    main.app.state.reranker = FakeReranker()
+    main.app.state.generator = FakeGenerator()
+
+    client = TestClient(main.app)
+
+    response = client.post(
+        "/ask",
+        json={
+            "question": "Explain the project structure",
+            "repo_url": "https://github.com/example/repo",
+        },
+    )
+
+    assert response.status_code == 503
+    assert (
+        "temporarily unavailable"
+        in response.json()["detail"]
+    )

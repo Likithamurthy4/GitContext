@@ -122,7 +122,7 @@ def build_repository_context(repo_url: str, app: FastAPI) -> dict:
         )
 
     print(f"[INGEST] Found {len(documents)} files.")
-    chunks = chunk_documents(documents)
+    chunks = chunk_documents(documents, strategy="ast")
 
     if not chunks:
         raise ValueError(
@@ -257,12 +257,27 @@ def ask_question(request: AskRequest):
         error_message = str(exc)
         print(f"[ERROR] Question answering failed: {error_message}")
 
-        if "429" in error_message or "RESOURCE_EXHAUSTED" in error_message:
+        if (
+            "429" in error_message
+            or "RESOURCE_EXHAUSTED" in error_message
+        ):
             raise HTTPException(
                 status_code=429,
                 detail=(
-                    "Gemini API quota exceeded. Please try again after "
-                    "your quota resets, or check your Gemini API usage limits."
+                    "Gemini API quota exceeded. Please check your "
+                    "API usage limits and try again when quota is available."
+                ),
+            ) from exc
+
+        if (
+            "503" in error_message
+            or "UNAVAILABLE" in error_message
+        ):
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "The answer-generation model is temporarily unavailable. "
+                    "Please try again shortly."
                 ),
             ) from exc
 
