@@ -13,7 +13,7 @@ def test_ingests_supported_files(tmp_path, monkeypatch):
 
     monkeypatch.setattr(
         "src.ingestion.pipeline.scan_repository",
-        lambda repo: [Path("app.py")],
+        lambda repo, extra_ignored_directories=None: [Path("app.py")],
     )
 
     monkeypatch.setattr(
@@ -35,7 +35,7 @@ def test_maps_typescript_language(tmp_path, monkeypatch):
 
     monkeypatch.setattr(
         "src.ingestion.pipeline.scan_repository",
-        lambda repo: [Path("app.ts")],
+        lambda repo, extra_ignored_directories=None: [Path("app.ts")],
     )
     monkeypatch.setattr(
         "src.ingestion.pipeline.read_file",
@@ -50,7 +50,7 @@ def test_maps_typescript_language(tmp_path, monkeypatch):
 def test_returns_empty_list_when_no_files_found(tmp_path, monkeypatch):
     monkeypatch.setattr(
         "src.ingestion.pipeline.scan_repository",
-        lambda repo: [],
+        lambda repo, extra_ignored_directories=None: [],
     )
 
     assert ingest_repository(tmp_path) == []
@@ -59,7 +59,7 @@ def test_returns_empty_list_when_no_files_found(tmp_path, monkeypatch):
 def test_skips_file_when_reading_fails(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(
         "src.ingestion.pipeline.scan_repository",
-        lambda repo: [Path("broken.py")],
+        lambda repo, extra_ignored_directories=None: [Path("broken.py")],
     )
 
     def fail_read(path):

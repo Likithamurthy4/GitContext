@@ -1,0 +1,656 @@
+{
+  "repository": "D:\\Projects\\GitContext",
+  "dataset_size": 24,
+  "top_k": 5,
+  "hybrid_retrieval": {
+    "case_count": 24,
+    "hit_rate_at_5": 0.9583333333333334,
+    "mrr": 0.6458333333333334,
+    "cases": [
+      {
+        "question": "How are Python code chunks created?",
+        "expected_files": [
+          "src/ingestion/chunker.py"
+        ],
+        "retrieved_files": [
+          "tests/test_chunker_unit.py",
+          "tests/test_hybrid_search_unit.py",
+          "src/ingestion/chunker.py",
+          "tests/test_vector_store_unit.py",
+          "test_rag.py"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 0.3333333333333333
+      },
+      {
+        "question": "How does the file reader handle unsupported file types?",
+        "expected_files": [
+          "src/ingestion/file_reader.py"
+        ],
+        "retrieved_files": [
+          "tests/test_file_reader_unit.py",
+          "src/ingestion/file_reader.py",
+          "README.md"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 0.5
+      },
+      {
+        "question": "How are repository files scanned and filtered?",
+        "expected_files": [
+          "src/ingestion/file_scanner.py"
+        ],
+        "retrieved_files": [
+          "test_scanner.py",
+          "src/ingestion/file_scanner.py",
+          "README.md",
+          "tests/test_scanner_unit.py"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 0.5
+      },
+      {
+        "question": "How does the repository loader clone a GitHub repository?",
+        "expected_files": [
+          "src/ingestion/repository_loader.py"
+        ],
+        "retrieved_files": [
+          "src/ingestion/repository_loader.py",
+          "tests/test_repository_loader_unit.py",
+          "src/main.py"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "How does hybrid search combine semantic and keyword rankings?",
+        "expected_files": [
+          "src/retrieval/hybrid_search.py"
+        ],
+        "retrieved_files": [
+          "src/retrieval/hybrid_search.py",
+          "test_reranker.py",
+          "test_hybrid_search.py",
+          "tests/test_hybrid_search_unit.py"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "How are search results reranked using a CrossEncoder?",
+        "expected_files": [
+          "src/retrieval/reranker.py"
+        ],
+        "retrieved_files": [
+          "src/retrieval/reranker.py",
+          "tests/test_reranker_unit.py",
+          "test_reranker.py"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "How are code chunks stored and retrieved using Qdrant?",
+        "expected_files": [
+          "src/retrieval/vector_store.py"
+        ],
+        "retrieved_files": [
+          "src/ingestion/chunker.py",
+          "src/retrieval/vector_store.py",
+          "README.md"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 0.5
+      },
+      {
+        "question": "How does the API generate answers to repository questions?",
+        "expected_files": [
+          "src/llm/answer_generator.py"
+        ],
+        "retrieved_files": [
+          "README.md",
+          "src/llm/answer_generator.py",
+          "tests/test_api_unit.py",
+          "test_rag.py"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 0.5
+      },
+      {
+        "question": "How does the ingestion pipeline process a repository?",
+        "expected_files": [
+          "src/ingestion/pipeline.py"
+        ],
+        "retrieved_files": [
+          "tests/test_ingestion_pipeline_unit.py",
+          "src/ingestion/pipeline.py",
+          "src/main.py",
+          "README.md"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 0.5
+      },
+      {
+        "question": "How does AST-based chunking identify Python functions and classes?",
+        "expected_files": [
+          "src/ingestion/chunker.py"
+        ],
+        "retrieved_files": [
+          "src/ingestion/chunker.py",
+          "tests/test_chunker_unit.py"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "How does the chunker handle Python syntax errors?",
+        "expected_files": [
+          "src/ingestion/chunker.py"
+        ],
+        "retrieved_files": [
+          "tests/test_chunker_unit.py",
+          "README.md",
+          "src/ingestion/chunker.py",
+          "test_vector_store.py"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 0.3333333333333333
+      },
+      {
+        "question": "How are chunk identifiers generated deterministically?",
+        "expected_files": [
+          "src/ingestion/chunker.py"
+        ],
+        "retrieved_files": [
+          "tests/test_chunker_unit.py",
+          "test_chunker.py",
+          "src/ingestion/chunker.py",
+          "src/retrieval/hybrid_search.py"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 0.3333333333333333
+      },
+      {
+        "question": "How does the scanner exclude ignored directories?",
+        "expected_files": [
+          "src/ingestion/file_scanner.py"
+        ],
+        "retrieved_files": [
+          "src/ingestion/file_scanner.py",
+          "tests/test_scanner_unit.py",
+          "README.md"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "How does the scanner limit the size of files it processes?",
+        "expected_files": [
+          "src/ingestion/file_scanner.py"
+        ],
+        "retrieved_files": [
+          "tests/test_scanner_unit.py",
+          "test_scanner.py",
+          "src/ingestion/file_scanner.py"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 0.3333333333333333
+      },
+      {
+        "question": "How does the file reader extract content from supported files?",
+        "expected_files": [
+          "src/ingestion/file_reader.py"
+        ],
+        "retrieved_files": [
+          "src/ingestion/file_reader.py",
+          "test_reader.py",
+          "tests/test_file_reader_unit.py"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "How does semantic search encode a query before searching?",
+        "expected_files": [
+          "src/retrieval/vector_store.py"
+        ],
+        "retrieved_files": [
+          "src/retrieval/hybrid_search.py",
+          "test_reranker.py"
+        ],
+        "hit_at_5": false,
+        "reciprocal_rank": 0.0
+      },
+      {
+        "question": "How does reciprocal rank fusion combine search result rankings?",
+        "expected_files": [
+          "src/retrieval/hybrid_search.py"
+        ],
+        "retrieved_files": [
+          "src/retrieval/reranker.py",
+          "src/retrieval/hybrid_search.py",
+          "test_reranker.py"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 0.5
+      },
+      {
+        "question": "How does the retrieval system combine BM25 keyword search with vector search?",
+        "expected_files": [
+          "src/retrieval/hybrid_search.py"
+        ],
+        "retrieved_files": [
+          "src/retrieval/hybrid_search.py",
+          "README.md",
+          "test_hybrid_search.py"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "How does the CrossEncoder score query and code pairs?",
+        "expected_files": [
+          "src/retrieval/reranker.py"
+        ],
+        "retrieved_files": [
+          "src/retrieval/reranker.py",
+          "tests/test_reranker_unit.py",
+          "README.md",
+          "test_reranker.py"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "How does the vector store attach file paths and line numbers to indexed chunks?",
+        "expected_files": [
+          "src/retrieval/vector_store.py"
+        ],
+        "retrieved_files": [
+          "test_vector_store.py",
+          "src/retrieval/vector_store.py",
+          "src/retrieval/hybrid_search.py",
+          "src/ingestion/chunker.py",
+          "test_hybrid_search.py"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 0.5
+      },
+      {
+        "question": "How does the API validate a GitHub repository URL?",
+        "expected_files": [
+          "src/main.py"
+        ],
+        "retrieved_files": [
+          "tests/test_api_unit.py",
+          "README.md",
+          "src/main.py",
+          "src/ingestion/repository_loader.py"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 0.3333333333333333
+      },
+      {
+        "question": "How does the API cache repository context after indexing?",
+        "expected_files": [
+          "src/main.py"
+        ],
+        "retrieved_files": [
+          "src/main.py",
+          "README.md",
+          "test_vector_store.py"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "How does the API handle rate-limit errors from the answer generator?",
+        "expected_files": [
+          "src/main.py"
+        ],
+        "retrieved_files": [
+          "src/llm/answer_generator.py",
+          "tests/test_api_unit.py",
+          "src/main.py"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 0.3333333333333333
+      },
+      {
+        "question": "How does the answer generator produce responses using retrieved code context?",
+        "expected_files": [
+          "src/llm/answer_generator.py"
+        ],
+        "retrieved_files": [
+          "src/llm/answer_generator.py",
+          "README.md",
+          "src/main.py",
+          "test_rag.py"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 1.0
+      }
+    ]
+  },
+  "after_reranking": {
+    "case_count": 24,
+    "hit_rate_at_5": 0.9166666666666666,
+    "mrr": 0.6701388888888888,
+    "cases": [
+      {
+        "question": "How are Python code chunks created?",
+        "expected_files": [
+          "src/ingestion/chunker.py"
+        ],
+        "retrieved_files": [
+          "test_rag.py",
+          "tests/test_chunker_unit.py",
+          "src/ingestion/chunker.py",
+          "tests/test_hybrid_search_unit.py",
+          "test_reranker.py"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 0.3333333333333333
+      },
+      {
+        "question": "How does the file reader handle unsupported file types?",
+        "expected_files": [
+          "src/ingestion/file_reader.py"
+        ],
+        "retrieved_files": [
+          "tests/test_file_reader_unit.py",
+          "src/ingestion/file_reader.py",
+          "README.md"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 0.5
+      },
+      {
+        "question": "How are repository files scanned and filtered?",
+        "expected_files": [
+          "src/ingestion/file_scanner.py"
+        ],
+        "retrieved_files": [
+          "test_scanner.py",
+          "src/ingestion/file_scanner.py",
+          "tests/test_scanner_unit.py",
+          "README.md"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 0.5
+      },
+      {
+        "question": "How does the repository loader clone a GitHub repository?",
+        "expected_files": [
+          "src/ingestion/repository_loader.py"
+        ],
+        "retrieved_files": [
+          "src/ingestion/repository_loader.py",
+          "tests/test_repository_loader_unit.py",
+          "test_ingestion.py"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "How does hybrid search combine semantic and keyword rankings?",
+        "expected_files": [
+          "src/retrieval/hybrid_search.py"
+        ],
+        "retrieved_files": [
+          "src/retrieval/hybrid_search.py",
+          "test_hybrid_search.py",
+          "test_reranker.py"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "How are search results reranked using a CrossEncoder?",
+        "expected_files": [
+          "src/retrieval/reranker.py"
+        ],
+        "retrieved_files": [
+          "src/retrieval/reranker.py",
+          "tests/test_reranker_unit.py",
+          "test_reranker.py"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "How are code chunks stored and retrieved using Qdrant?",
+        "expected_files": [
+          "src/retrieval/vector_store.py"
+        ],
+        "retrieved_files": [
+          "src/retrieval/vector_store.py",
+          "src/ingestion/chunker.py",
+          "src/retrieval/hybrid_search.py",
+          "README.md"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "How does the API generate answers to repository questions?",
+        "expected_files": [
+          "src/llm/answer_generator.py"
+        ],
+        "retrieved_files": [
+          "README.md",
+          "src/llm/answer_generator.py",
+          "tests/test_api_unit.py"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 0.5
+      },
+      {
+        "question": "How does the ingestion pipeline process a repository?",
+        "expected_files": [
+          "src/ingestion/pipeline.py"
+        ],
+        "retrieved_files": [
+          "tests/test_ingestion_pipeline_unit.py",
+          "src/main.py",
+          "src/ingestion/pipeline.py",
+          "test_vector_store.py"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 0.3333333333333333
+      },
+      {
+        "question": "How does AST-based chunking identify Python functions and classes?",
+        "expected_files": [
+          "src/ingestion/chunker.py"
+        ],
+        "retrieved_files": [
+          "src/ingestion/chunker.py",
+          "tests/test_chunker_unit.py"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "How does the chunker handle Python syntax errors?",
+        "expected_files": [
+          "src/ingestion/chunker.py"
+        ],
+        "retrieved_files": [
+          "tests/test_chunker_unit.py",
+          "src/ingestion/chunker.py",
+          "test_vector_store.py",
+          "test_hybrid_search.py"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 0.5
+      },
+      {
+        "question": "How are chunk identifiers generated deterministically?",
+        "expected_files": [
+          "src/ingestion/chunker.py"
+        ],
+        "retrieved_files": [
+          "tests/test_chunker_unit.py",
+          "test_chunker.py",
+          "src/ingestion/chunker.py",
+          "src/retrieval/hybrid_search.py"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 0.3333333333333333
+      },
+      {
+        "question": "How does the scanner exclude ignored directories?",
+        "expected_files": [
+          "src/ingestion/file_scanner.py"
+        ],
+        "retrieved_files": [
+          "src/ingestion/file_scanner.py",
+          "tests/test_scanner_unit.py"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "How does the scanner limit the size of files it processes?",
+        "expected_files": [
+          "src/ingestion/file_scanner.py"
+        ],
+        "retrieved_files": [
+          "tests/test_scanner_unit.py",
+          "src/ingestion/file_scanner.py",
+          "test_scanner.py"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 0.5
+      },
+      {
+        "question": "How does the file reader extract content from supported files?",
+        "expected_files": [
+          "src/ingestion/file_reader.py"
+        ],
+        "retrieved_files": [
+          "src/ingestion/file_reader.py",
+          "test_reader.py",
+          "tests/test_file_reader_unit.py"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "How does semantic search encode a query before searching?",
+        "expected_files": [
+          "src/retrieval/vector_store.py"
+        ],
+        "retrieved_files": [
+          "src/retrieval/hybrid_search.py"
+        ],
+        "hit_at_5": false,
+        "reciprocal_rank": 0.0
+      },
+      {
+        "question": "How does reciprocal rank fusion combine search result rankings?",
+        "expected_files": [
+          "src/retrieval/hybrid_search.py"
+        ],
+        "retrieved_files": [
+          "src/retrieval/hybrid_search.py",
+          "src/retrieval/reranker.py"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "How does the retrieval system combine BM25 keyword search with vector search?",
+        "expected_files": [
+          "src/retrieval/hybrid_search.py"
+        ],
+        "retrieved_files": [
+          "src/retrieval/hybrid_search.py",
+          "README.md"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "How does the CrossEncoder score query and code pairs?",
+        "expected_files": [
+          "src/retrieval/reranker.py"
+        ],
+        "retrieved_files": [
+          "src/retrieval/reranker.py",
+          "tests/test_reranker_unit.py"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "How does the vector store attach file paths and line numbers to indexed chunks?",
+        "expected_files": [
+          "src/retrieval/vector_store.py"
+        ],
+        "retrieved_files": [
+          "test_vector_store.py",
+          "src/retrieval/hybrid_search.py",
+          "test_hybrid_search.py",
+          "src/retrieval/vector_store.py",
+          "test_rag.py"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 0.25
+      },
+      {
+        "question": "How does the API validate a GitHub repository URL?",
+        "expected_files": [
+          "src/main.py"
+        ],
+        "retrieved_files": [
+          "tests/test_api_unit.py",
+          "README.md",
+          "src/main.py"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 0.3333333333333333
+      },
+      {
+        "question": "How does the API cache repository context after indexing?",
+        "expected_files": [
+          "src/main.py"
+        ],
+        "retrieved_files": [
+          "src/main.py",
+          "README.md"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "How does the API handle rate-limit errors from the answer generator?",
+        "expected_files": [
+          "src/main.py"
+        ],
+        "retrieved_files": [
+          "tests/test_api_unit.py",
+          "src/llm/answer_generator.py",
+          "README.md"
+        ],
+        "hit_at_5": false,
+        "reciprocal_rank": 0.0
+      },
+      {
+        "question": "How does the answer generator produce responses using retrieved code context?",
+        "expected_files": [
+          "src/llm/answer_generator.py"
+        ],
+        "retrieved_files": [
+          "src/llm/answer_generator.py",
+          "README.md",
+          "tests/test_api_unit.py",
+          "src/main.py"
+        ],
+        "hit_at_5": true,
+        "reciprocal_rank": 1.0
+      }
+    ]
+  }
+}

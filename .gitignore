@@ -22,6 +22,10 @@ venv/
 .pytest_cache/
 .coverage
 htmlcov/
+.ruff_cache/
+.mypy_cache/
+.cache/
+*.tsbuildinfo
 
 # Vector database / local indexes
 qdrant_storage/

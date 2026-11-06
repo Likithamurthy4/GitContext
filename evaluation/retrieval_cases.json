@@ -1,0 +1,98 @@
+[
+  {
+    "question": "How are Python code chunks created?",
+    "expected_files": ["src/ingestion/chunker.py"]
+  },
+  {
+    "question": "How does the file reader handle unsupported file types?",
+    "expected_files": ["src/ingestion/file_reader.py"]
+  },
+  {
+    "question": "How are repository files scanned and filtered?",
+    "expected_files": ["src/ingestion/file_scanner.py"]
+  },
+  {
+    "question": "How does the repository loader clone a GitHub repository?",
+    "expected_files": ["src/ingestion/repository_loader.py"]
+  },
+  {
+    "question": "How does hybrid search combine semantic and keyword rankings?",
+    "expected_files": ["src/retrieval/hybrid_search.py"]
+  },
+  {
+    "question": "How are search results reranked using a CrossEncoder?",
+    "expected_files": ["src/retrieval/reranker.py"]
+  },
+  {
+    "question": "How are code chunks stored and retrieved using Qdrant?",
+    "expected_files": ["src/retrieval/vector_store.py"]
+  },
+  {
+    "question": "How does the API generate answers to repository questions?",
+    "expected_files": ["src/llm/answer_generator.py"]
+  },
+  {
+    "question": "How does the ingestion pipeline process a repository?",
+    "expected_files": ["src/ingestion/pipeline.py"]
+  },
+  {
+    "question": "How does AST-based chunking identify Python functions and classes?",
+    "expected_files": ["src/ingestion/chunker.py"]
+  },
+  {
+    "question": "How does the chunker handle Python syntax errors?",
+    "expected_files": ["src/ingestion/chunker.py"]
+  },
+  {
+    "question": "How are chunk identifiers generated deterministically?",
+    "expected_files": ["src/ingestion/chunker.py"]
+  },
+  {
+    "question": "How does the scanner exclude ignored directories?",
+    "expected_files": ["src/ingestion/file_scanner.py"]
+  },
+  {
+    "question": "How does the scanner limit the size of files it processes?",
+    "expected_files": ["src/ingestion/file_scanner.py"]
+  },
+  {
+    "question": "How does the file reader extract content from supported files?",
+    "expected_files": ["src/ingestion/file_reader.py"]
+  },
+  {
+    "question": "How does semantic search encode a query before searching?",
+    "expected_files": ["src/retrieval/vector_store.py"]
+  },
+  {
+    "question": "How does reciprocal rank fusion combine search result rankings?",
+    "expected_files": ["src/retrieval/hybrid_search.py"]
+  },
+  {
+    "question": "How does the retrieval system combine BM25 keyword search with vector search?",
+    "expected_files": ["src/retrieval/hybrid_search.py"]
+  },
+  {
+    "question": "How does the CrossEncoder score query and code pairs?",
+    "expected_files": ["src/retrieval/reranker.py"]
+  },
+  {
+    "question": "How does the vector store attach file paths and line numbers to indexed chunks?",
+    "expected_files": ["src/retrieval/vector_store.py"]
+  },
+  {
+    "question": "How does the API validate a GitHub repository URL?",
+    "expected_files": ["src/main.py"]
+  },
+  {
+    "question": "How does the API cache repository context after indexing?",
+    "expected_files": ["src/main.py"]
+  },
+  {
+    "question": "How does the API handle rate-limit errors from the answer generator?",
+    "expected_files": ["src/main.py"]
+  },
+  {
+    "question": "How does the answer generator produce responses using retrieved code context?",
+    "expected_files": ["src/llm/answer_generator.py"]
+  }
+]

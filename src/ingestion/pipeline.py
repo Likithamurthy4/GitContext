@@ -33,11 +33,14 @@ LANGUAGE_MAP = {
 }
 
 
-def ingest_repository(repo_path: Path) -> list[Document]:
+def ingest_repository(
+    repo_path: Path,
+    extra_ignored_directories: set[str] | None = None,
+) -> list[Document]:
     """Scan a repository and create structured documents."""
 
     repo_path = repo_path.resolve()
-    file_paths = scan_repository(repo_path)
+    file_paths = scan_repository(repo_path, extra_ignored_directories)
 
     documents = []
 

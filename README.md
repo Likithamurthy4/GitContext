@@ -1,148 +1,216 @@
-# GitContext 🔍
+# GitContext
 
-**Ask questions about any GitHub repository and get AI-generated answers grounded in its source code.**
+Ask questions about a public GitHub repository and get conversational
+answers grounded in its source code.
 
-GitContext is an AI-powered repository understanding tool designed to help developers explore unfamiliar codebases. Instead of manually searching through files, users can ask natural-language questions and receive answers supported by relevant source-code references.
+![GitContext chat interface](docs/screenshots/gitcontext-chat.png)
 
-## ✨ Features
+[Architecture](docs/architecture.md) · [Demo](docs/demo.md) ·
+[Resume description](docs/resume-project-description.md)
 
-- **GitHub Repository Ingestion** — Load and process source files from a GitHub repository.
-- **Semantic Search** — Find code relevant to a question using embeddings.
-- **Hybrid Retrieval** — Combine semantic search with BM25 keyword-based retrieval.
-- **Cross-Encoder Reranking** — Improve the relevance of retrieved code chunks.
-- **AI-Powered Answers** — Generate answers using Google's Gemini API.
-- **Source References** — Display relevant source chunks alongside generated answers.
-- **Markdown Rendering** — Present answers with readable headings, lists, tables, and code blocks.
-- **REST API** — Expose repository question-answering functionality through FastAPI.
-- **Dark UI** — Explore repositories through a React-based interface.
+## What it does
 
-## 🛠️ Tech Stack
+GitContext ingests a repository, retrieves relevant code with semantic and
+keyword search, reranks the results, and asks Gemini to answer with verifiable
+file-and-line references. Follow-up questions stay in the same conversation.
 
-| Component | Technologies |
-|---|---|
-| Frontend | React, TypeScript, Vite |
-| Backend | Python, FastAPI |
-| AI Model | Google Gemini API |
-| Semantic Retrieval | Sentence Transformers |
-| Keyword Retrieval | BM25 |
-| Reranking | Cross-Encoder |
-| Vector Search | Qdrant |
-| Environment Configuration | python-dotenv |
+- FastAPI backend with repository validation and `/ask` API.
+- AST-aware source chunking, Sentence Transformers embeddings, local Qdrant,
+  BM25 retrieval, and cross-encoder reranking over a broader set of relevant
+  code chunks.
+- Detailed, citation-grounded answers with automatic continuation when the
+  model reaches its output limit; incomplete answers are surfaced as errors.
+- React and TypeScript chat with saved threads, markdown answers, linked source
+  citations, loading states, and clear API errors.
+- Docker Compose deployment with Nginx routing and persistent data/model
+  volumes.
 
-## 🏗️ Architecture
+## Architecture
 
-1. **Repository ingestion:** Collect supported source files from a GitHub repository.
-2. **Chunking:** Split source files into smaller code segments for retrieval.
-3. **Embedding and indexing:** Create vector representations and store them in the vector database.
-4. **Hybrid retrieval:** Retrieve relevant chunks using semantic and keyword-based search.
-5. **Reranking:** Rank candidate chunks by relevance to the user's question.
-6. **Answer generation:** Send the question and relevant code context to Gemini.
-7. **Response display:** Show the generated answer and relevant source references in the frontend.
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Python installed
-- Node.js and npm installed
-- A Google Gemini API key
-- Git installed
-
-### 1. Clone the repository
-
-```bash
-git clone <YOUR_GITHUB_REPOSITORY_URL>
-cd GitContext
+```mermaid
+flowchart LR
+    Browser["React chat"] --> Nginx["Nginx<br/>static hosting + /api proxy"]
+    Nginx --> FastAPI["FastAPI /ask"]
+    FastAPI --> GitHub["Public GitHub repo"]
+    GitHub --> Ingest["Scan → chunk → embed"]
+    Ingest --> Qdrant[("Local Qdrant")]
+    Ingest --> BM25["BM25 index"]
+    Qdrant --> Retrieve["Hybrid retrieval + fusion"]
+    BM25 --> Retrieve
+    Retrieve --> Rerank["Cross-encoder reranker"]
+    Rerank --> Gemini["Gemini"]
+    Gemini --> FastAPI
+    FastAPI --> Nginx
+    Nginx --> Browser
+    Browser --> History["Browser local storage"]
 ```
 
-Replace the placeholder with your actual GitHub repository URL.
+See [the architecture notes](docs/architecture.md) for request flow,
+persistence, scaling constraints, and trust boundaries.
 
-### 2. Set up the Python environment
+## Quick start with Docker
 
-From the project root, create and activate a virtual environment:
+Requirements: Docker Engine and the Docker Compose plugin.
 
 ```powershell
-python -m venv venv
-.\venv\Scripts\Activate.ps1
+if (-not (Test-Path .env)) {
+    Copy-Item .env.example .env
+}
 ```
 
-Install the Python dependencies using the project's dependency file, if available:
+Set `GEMINI_API_KEY` in `.env` (do not replace an existing `.env`), verify
+Docker is reachable, then run:
 
 ```powershell
-pip install -r requirements.txt
+docker version
+docker compose version
+docker compose config --quiet
+docker compose up --build -d
 ```
 
-### 3. Configure environment variables
-
-Create a `.env` file in the project root:
-
-```env
-GEMINI_API_KEY=your_gemini_api_key
-GEMINI_MODEL=your_supported_gemini_model
-```
-
-Replace the placeholders with your own credentials and the model configured for your project.
-
-**Security:** Never commit your `.env` file or expose your API key in source code.
-
-### 4. Start the backend
-
-From the project root, run:
+If PowerShell says `docker` is not recognized on Windows, restart VS Code after
+installing Docker Desktop. In the current terminal session, you can add
+Docker Desktop's per-user CLI directory temporarily:
 
 ```powershell
-python -m uvicorn src.main:app --reload
+$dockerCli = Join-Path $env:LOCALAPPDATA "Programs\DockerDesktop\resources\bin"
+$env:Path = "$dockerCli;$env:Path"
+docker version
 ```
 
-The API should be available at:
+Docker Desktop must be running with the Linux container engine enabled.
 
-- API: `http://127.0.0.1:8000`
-- Interactive API documentation: `http://127.0.0.1:8000/docs`
+Open [http://localhost:8080](http://localhost:8080). The API documentation is
+available at [http://localhost:8080/api/docs](http://localhost:8080/api/docs).
+Set `APP_PORT` in `.env` to change the host port.
 
-### 5. Start the frontend
+The Docker image uses CPU-only PyTorch; model inference therefore runs on the
+CPU and does not download CUDA libraries. The first request may take several
+minutes: it downloads the embedding and reranker models, clones the repository,
+and builds its index. Compose persists
+repository clones and Qdrant data in `gitcontext_data`, and model downloads in
+`model_cache`. Keep these volumes when upgrading or restarting.
 
-Open a second terminal:
+To follow service logs:
 
 ```powershell
-cd frontend
-npm install
-npm run dev
+docker compose logs -f
 ```
 
-Open the local URL printed by Vite, usually `http://localhost:5173`.
+To stop the services without deleting indexed data:
 
-## 💬 Example Questions
+```powershell
+docker compose down
+```
 
-After entering a supported GitHub repository, try questions such as:
+Do not use `docker compose down -v` unless you intend to delete the persistent
+repository, vector, and model-cache volumes.
 
-- How is authentication implemented?
-- Where is the database connection configured?
-- Explain the main application flow.
-- Which files handle error handling?
-- How does a particular function work?
+## Deployment
 
-The quality of answers depends on the repository content successfully retrieved and the available AI model context.
+The Compose stack is intended for a **single Docker host**:
 
-## ⚠️ Limitations
+1. Install Docker Engine and the Compose plugin on a Linux VM.
+2. Clone the repository and create `.env` from `.env.example` if it does not
+   already exist.
+3. Configure the Gemini key, select a supported model, and set `APP_PORT` if
+   needed.
+4. Start the stack with `docker compose up --build -d`.
+5. Put a TLS-enabled reverse proxy or managed HTTPS ingress in front of the
+   frontend port; expose only the frontend publicly. The API remains on the
+   private Compose network and is reachable through `/api`.
+6. Configure persistent storage and backups for the two named volumes.
 
-- Answer generation requires a valid Gemini API key and available API quota.
-- API rate limits may temporarily prevent answer generation.
-- Answer quality depends on retrieval quality and the source code available to the system.
-- Large repositories may require additional ingestion and performance optimizations.
-- Generated answers should be verified against the original source code.
+The frontend and API are same-origin in this deployment, so browser CORS is not
+needed. For a separately hosted frontend, pass
+`--build-arg VITE_API_BASE_URL=https://api.example.com` when building the
+frontend image and set `CORS_ORIGINS` to the exact frontend origin(s) in the
+API environment. Do not use wildcard origins with credentials.
 
-## 🔮 Future Improvements
+This project is not configured for multi-replica deployment. Conversation
+history, repository contexts, and BM25 indexes are process-local; use one API
+process with the local Qdrant data directory. Horizontal scaling requires
+shared conversation state, repository-index coordination, and a shared
+server-mode or managed vector database. See [deployment and scaling
+notes](docs/architecture.md#persistence-and-scaling).
 
-- Add repository indexing and cache persistence.
-- Support larger repositories and additional programming languages.
-- Add automated tests for ingestion, retrieval, and API endpoints.
-- Improve error handling, observability, and request latency.
-- Add deployment support and continuous integration.
-- Improve source navigation with direct file and line references.
+## Local development
 
-## 👩‍💻 Project Goal
+Requirements: Python 3.12, Node.js 22, Git, and a Gemini API key.
 
-GitContext explores how retrieval-augmented generation (RAG), hybrid search, and reranking can help developers understand unfamiliar codebases more efficiently.
+1. Create a Python virtual environment and install dependencies:
 
----
+   ```powershell
+   python -m venv .venv
+   .\.venv\Scripts\Activate.ps1
+   python -m pip install -r requirements-dev.txt
+   ```
 
-*Built as an AI-powered developer productivity project.*
+2. Copy `.env.example` to `.env` and add your Gemini API key.
+3. Start the API from the repository root:
+
+   ```powershell
+   python -m uvicorn src.main:app --reload
+   ```
+
+4. In another terminal, start the frontend:
+
+   ```powershell
+   cd frontend
+   npm ci
+   npm run dev
+   ```
+
+   Open the Vite URL (usually `http://localhost:5173`). Vite proxies `/api`
+   requests to the local API at `http://127.0.0.1:8000`.
+
+## Checks
+
+From the repository root:
+
+```powershell
+python -m pytest tests -q
+```
+
+From `frontend`:
+
+```powershell
+npm test
+npm run lint
+npm run build
+```
+
+GitHub Actions runs the backend and frontend checks and validates the Compose
+configuration on pushes and pull requests.
+
+## Configuration
+
+| Variable | Purpose | Default |
+|---|---|---|
+| `GEMINI_API_KEY` | Backend credential for Gemini; keep secret | Required |
+| `GEMINI_MODEL` | Gemini model name | `gemini-3.8-flash` |
+| `CORS_ORIGINS` | Comma-separated allowed browser origins for a separate frontend | Local Vite origins |
+| `APP_PORT` | Host port for the Compose frontend | `8080` |
+| `VITE_API_BASE_URL` | Frontend API base URL, injected at build time | `/api` |
+
+## Repository hygiene
+
+- Copy `.env.example` to `.env`; never commit API keys.
+- Generated clones, Qdrant files, Python environments, Node dependencies, and
+  frontend build output are excluded from Git and Docker build contexts.
+- Keep source, tests, and docs in version control; do not commit local model
+  weights or indexed repository contents.
+
+## Limitations
+
+- Only public GitHub repository URLs are supported.
+- The first repository request includes clone, embedding, and indexing time.
+- Large or complex repositories may take significant time and disk space;
+  supported file types and per-file size limits are defined by the scanner.
+- Gemini quota and availability can affect response generation.
+- Validate generated explanations against the cited source before relying on
+  them.
+
+## Resume
+
+See [the copy-ready project description](docs/resume-project-description.md).

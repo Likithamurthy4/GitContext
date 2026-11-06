@@ -25,7 +25,11 @@ IGNORED_DIRECTORIES = {
 MAX_FILE_SIZE_BYTES = 1_000_000  # 1 MB
 
 
-def scan_repository(repo_path: Path) -> list[Path]:
+
+def scan_repository(
+    repo_path: Path,
+    extra_ignored_directories: set[str] | None = None,
+) -> list[Path]:
     """Return supported files while skipping ignored folders and large files."""
 
     repo_path = repo_path.resolve()
@@ -34,6 +38,10 @@ def scan_repository(repo_path: Path) -> list[Path]:
         raise NotADirectoryError(
             f"Repository directory not found: {repo_path}"
         )
+
+    ignored_directories = IGNORED_DIRECTORIES | (
+        extra_ignored_directories or set()
+    )
 
     selected_files = []
 
@@ -44,7 +52,7 @@ def scan_repository(repo_path: Path) -> list[Path]:
         relative_path = file_path.relative_to(repo_path)
 
         if any(
-            part in IGNORED_DIRECTORIES
+            part in ignored_directories
             for part in relative_path.parts[:-1]
         ):
             continue

@@ -78,3 +78,30 @@ def test_scans_nested_supported_files(tmp_path):
     files = scan_repository(tmp_path)
 
     assert files == [Path("src/main.py")]
+
+
+def test_scans_large_repository_tree_without_indexing_build_artifacts(
+    tmp_path,
+):
+    source_dir = tmp_path / "src"
+    source_dir.mkdir()
+    generated_dir = tmp_path / "node_modules"
+    generated_dir.mkdir()
+
+    for index in range(400):
+        (source_dir / f"module_{index:03}.py").write_text(
+            f"VALUE = {index}\n",
+            encoding="utf-8",
+        )
+
+    (generated_dir / "dependency.js").write_text(
+        "module.exports = true;",
+        encoding="utf-8",
+    )
+
+    files = scan_repository(tmp_path)
+
+    assert len(files) == 400
+    assert files[0] == Path("src/module_000.py")
+    assert files[-1] == Path("src/module_399.py")
+    assert Path("node_modules/dependency.js") not in files

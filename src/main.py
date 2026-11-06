@@ -1,5 +1,7 @@
-
+import uuid
+import random
 import hashlib
+import os
 import re
 import time
 from contextlib import asynccontextmanager
@@ -13,9 +15,12 @@ from src.ingestion.repository_loader import clone_repository
 from src.ingestion.pipeline import ingest_repository
 from src.ingestion.chunker import chunk_documents
 from src.retrieval.vector_store import VectorStore
-from src.retrieval.hybrid_search import HybridSearch
+from src.retrieval.hybrid_search import HybridSearch, chunk_key
 from src.retrieval.reranker import CodeReranker
-from src.llm.answer_generator import AnswerGenerator
+from src.llm.answer_generator import (
+    AnswerGenerator,
+    is_project_overview_question,
+)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -28,6 +33,7 @@ DEFAULT_REPO_URL = "https://github.com/pallets/itsdangerous"
 class AskRequest(BaseModel):
     question: str = Field(..., min_length=1)
     repo_url: str = Field(default=DEFAULT_REPO_URL)
+    conversation_id: str | None = None
 
 
 @asynccontextmanager
@@ -38,13 +44,13 @@ async def lifespan(app: FastAPI):
     print("[STARTUP] Initializing answer generator...")
     app.state.generator = AnswerGenerator()
 
-    # Cache repository search contexts for this server process.
     app.state.repository_contexts = {}
+    app.state.conversation_histories = {}
 
     print("[STARTUP] GitContext is ready.")
+
     yield
 
-    # Close persistent vector-store clients on shutdown.
     for context in app.state.repository_contexts.values():
         try:
             context["vector_store"].close()
@@ -62,8 +68,12 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
+        origin.strip().rstrip("/")
+        for origin in os.getenv(
+            "CORS_ORIGINS",
+            "http://localhost:5173,http://127.0.0.1:5173",
+        ).split(",")
+        if origin.strip()
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -82,8 +92,8 @@ def build_repository_context(repo_url: str, app: FastAPI) -> dict:
             "Enter a valid public GitHub repository URL."
         )
 
-    # Normalize .git so equivalent URLs share a cache key.
     normalized_url = repo_url.removesuffix(".git")
+
     repo_key = hashlib.sha256(
         normalized_url.encode("utf-8")
     ).hexdigest()[:16]
@@ -95,8 +105,15 @@ def build_repository_context(repo_url: str, app: FastAPI) -> dict:
         return cached
 
     print("[INGEST] Preparing repository:", repo_url)
+
     repo_name = normalized_url.rsplit("/", 1)[-1]
-    safe_name = re.sub(r"[^a-zA-Z0-9_-]", "_", repo_name)
+
+    safe_name = re.sub(
+        r"[^a-zA-Z0-9_-]",
+        "_",
+        repo_name,
+    )
+
     repo_path = REPOSITORIES_DIR / f"{safe_name}_{repo_key}"
 
     REPOSITORIES_DIR.mkdir(parents=True, exist_ok=True)
@@ -114,6 +131,7 @@ def build_repository_context(repo_url: str, app: FastAPI) -> dict:
         clone_repository(normalized_url, repo_path)
 
     print("[INGEST] Scanning repository files...")
+
     documents = ingest_repository(repo_path)
 
     if not documents:
@@ -122,6 +140,7 @@ def build_repository_context(repo_url: str, app: FastAPI) -> dict:
         )
 
     print(f"[INGEST] Found {len(documents)} files.")
+
     chunks = chunk_documents(documents, strategy="ast")
 
     if not chunks:
@@ -138,7 +157,9 @@ def build_repository_context(repo_url: str, app: FastAPI) -> dict:
 
     try:
         print("[INGEST] Creating embeddings and indexing chunks...")
+
         indexed_count = vector_store.index_chunks(chunks)
+
         print(f"[INGEST] Indexed {indexed_count} chunks.")
 
         hybrid_search = HybridSearch(vector_store)
@@ -150,6 +171,7 @@ def build_repository_context(repo_url: str, app: FastAPI) -> dict:
         }
 
         app.state.repository_contexts[repo_key] = context
+
         print("[INGEST] Repository indexing complete.")
 
         return context
@@ -172,6 +194,92 @@ def health():
     return {"status": "ok"}
 
 
+def generate_answer_with_retry(
+    generator: AnswerGenerator,
+    question: str,
+    ranked_chunks: list[dict],
+    conversation_history: list[dict] | None = None,
+) -> dict:
+    """Retry once when Gemini is temporarily unavailable."""
+
+    for attempt in range(2):
+        try:
+            return generator.generate(
+                question,
+                ranked_chunks,
+                conversation_history=conversation_history,
+            )
+
+        except Exception as exc:
+            error_message = str(exc).upper()
+
+            is_temporary_unavailable = (
+                "503" in error_message
+                or "UNAVAILABLE" in error_message
+            )
+
+            if not is_temporary_unavailable or attempt == 1:
+                raise
+
+            delay = 2 + random.uniform(0, 1)
+
+            print(
+                f"[RETRY] Gemini temporarily unavailable. "
+                f"Retrying once in {delay:.1f}s."
+            )
+
+            time.sleep(delay)
+
+    raise RuntimeError("Answer generation failed unexpectedly.")
+
+
+def retrieve_relevant_chunks(
+    hybrid: HybridSearch,
+    reranker: CodeReranker,
+    question: str,
+    search_question: str,
+) -> list[dict]:
+    """Use focused retrieval facets for project-wide overview questions."""
+
+    if not is_project_overview_question(question):
+        candidates = hybrid.search(
+            search_question,
+            limit=12,
+            candidate_limit=20,
+        )
+        return reranker.rerank(
+            search_question,
+            candidates,
+            limit=8,
+        )
+
+    facets = (
+        "project purpose architecture components entry point",
+        "end-to-end workflow pipeline execution stages",
+        "important directories modules scripts responsibilities",
+        "data sources inputs processing analytics outputs reports",
+        "technology dependencies configuration setup run tests deployment",
+    )
+    candidates_by_key = {}
+
+    for facet in facets:
+        for candidate in hybrid.search(
+            f"{search_question} {facet}",
+            limit=8,
+            candidate_limit=20,
+        ):
+            candidates_by_key.setdefault(
+                chunk_key(candidate),
+                candidate,
+            )
+
+    return reranker.rerank(
+        search_question,
+        list(candidates_by_key.values()),
+        limit=16,
+    )
+
+
 @app.post("/ask")
 def ask_question(request: AskRequest):
     question = request.question.strip()
@@ -192,40 +300,96 @@ def ask_question(request: AskRequest):
             app,
         )
 
+        conversation_id = (
+            request.conversation_id or str(uuid.uuid4())
+        )
+
+        normalized_repo_url = (
+            request.repo_url.strip().rstrip("/")
+        ).removesuffix(".git")
+
+        conversation = app.state.conversation_histories.get(
+            conversation_id
+        )
+
+        if (
+            conversation is None
+            or conversation["repository"] != normalized_repo_url
+        ):
+            conversation = {
+                "repository": normalized_repo_url,
+                "messages": [],
+            }
+
+            app.state.conversation_histories[
+                conversation_id
+            ] = conversation
+
+        conversation_history = conversation["messages"]
+
         print(
             f"[TIMING] Repository setup: "
             f"{time.perf_counter() - start:.2f}s"
         )
 
+        # Rewrite follow-up question using conversation history.
         stage = time.perf_counter()
-        candidates = context["hybrid"].search(
+
+        search_question = app.state.generator.rewrite_question(
             question,
-            limit=5,
-            candidate_limit=8,
+            conversation_history,
         )
 
         print(
-            f"[TIMING] Search: "
-            f"{time.perf_counter() - stage:.2f}s"
-        )
-
-        stage = time.perf_counter()
-        ranked_chunks = app.state.reranker.rerank(
-            question,
-            candidates,
-            limit=3,
+            f"[QUERY REWRITE] {question} -> {search_question}"
         )
 
         print(
-            f"[TIMING] Reranking: "
+            f"[TIMING] Query rewriting: "
             f"{time.perf_counter() - stage:.2f}s"
         )
 
+        # Retrieve broader evidence for project-wide overview questions.
         stage = time.perf_counter()
-        result = app.state.generator.generate(
+
+        ranked_chunks = retrieve_relevant_chunks(
+            context["hybrid"],
+            app.state.reranker,
+            question,
+            search_question,
+        )
+
+        print(
+            f"[TIMING] Retrieval and reranking: "
+            f"{time.perf_counter() - stage:.2f}s"
+        )
+
+        # Generate answer using original question and history.
+        stage = time.perf_counter()
+
+        result = generate_answer_with_retry(
+            app.state.generator,
             question,
             ranked_chunks,
+            conversation_history,
         )
+
+        # Save successful question and answer.
+        conversation_history.append(
+            {
+                "role": "user",
+                "content": question,
+            }
+        )
+
+        conversation_history.append(
+            {
+                "role": "assistant",
+                "content": result["answer"],
+            }
+        )
+
+        conversation["messages"] = conversation_history[-12:]
 
         print(
             f"[TIMING] Answer generation: "
@@ -240,6 +404,7 @@ def ask_question(request: AskRequest):
         return {
             "question": question,
             "repository": request.repo_url,
+            "conversation_id": conversation_id,
             "answer": result["answer"],
             "sources": result["sources"],
         }
@@ -254,12 +419,18 @@ def ask_question(request: AskRequest):
         raise
 
     except Exception as exc:
+        import traceback
+
         error_message = str(exc)
-        print(f"[ERROR] Question answering failed: {error_message}")
+
+        print("[ERROR] Question answering failed:")
+        traceback.print_exc()
+
+        print(f"[ERROR MESSAGE] {error_message}")
 
         if (
             "429" in error_message
-            or "RESOURCE_EXHAUSTED" in error_message
+            or "RESOURCE_EXHAUSTED" in error_message.upper()
         ):
             raise HTTPException(
                 status_code=429,
@@ -271,7 +442,7 @@ def ask_question(request: AskRequest):
 
         if (
             "503" in error_message
-            or "UNAVAILABLE" in error_message
+            or "UNAVAILABLE" in error_message.upper()
         ):
             raise HTTPException(
                 status_code=503,
