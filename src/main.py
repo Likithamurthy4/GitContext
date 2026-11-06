@@ -241,6 +241,56 @@ def retrieve_relevant_chunks(
 ) -> list[dict]:
     """Use focused retrieval facets for project-wide overview questions."""
 
+    normalized_question = question.replace("\\", "/").casefold()
+    indexed_chunks = getattr(hybrid, "chunks", [])
+    indexed_paths = {
+        str(chunk.file_path).replace("\\", "/").casefold()
+        for chunk in indexed_chunks
+    }
+    matched_paths = {
+        path for path in indexed_paths if path in normalized_question
+    }
+
+    if not matched_paths:
+        basename_matches: dict[str, set[str]] = {}
+        for path in indexed_paths:
+            basename = path.rsplit("/", 1)[-1]
+            if basename and re.search(
+                rf"(?<![\w.-]){re.escape(basename)}(?![\w.-])",
+                normalized_question,
+            ):
+                basename_matches.setdefault(basename, set()).add(path)
+
+        matched_paths = {
+            next(iter(paths))
+            for paths in basename_matches.values()
+            if len(paths) == 1
+        }
+
+    if matched_paths:
+        file_chunks = [
+            {
+                "chunk_id": chunk.chunk_id,
+                "file_path": chunk.file_path,
+                "language": chunk.language,
+                "content": chunk.content,
+                "start_line": chunk.start_line,
+                "end_line": chunk.end_line,
+            }
+            for chunk in indexed_chunks
+            if str(chunk.file_path).replace("\\", "/").casefold()
+            in matched_paths
+        ]
+        print(
+            "[RETRIEVAL] Exact file match: "
+            f"{len(matched_paths)} file(s), {len(file_chunks)} chunk(s)."
+        )
+        return reranker.rerank(
+            search_question,
+            file_chunks,
+            limit=len(file_chunks),
+        )
+
     if not is_project_overview_question(question):
         candidates = hybrid.search(
             search_question,

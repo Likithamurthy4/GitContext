@@ -3,6 +3,97 @@ from fastapi.testclient import TestClient
 import pytest
 
 from src import main
+from src.ingestion.chunker import CodeChunk
+
+
+def test_named_file_retrieval_keeps_every_chunk_from_that_file():
+    class FakeHybrid:
+        chunks = [
+            CodeChunk(
+                chunk_id="target-1",
+                file_path="scripts/database_load.py",
+                language="python",
+                content="create_engine(database_url)",
+                start_line=1,
+                end_line=20,
+            ),
+            CodeChunk(
+                chunk_id="target-2",
+                file_path="scripts/database_load.py",
+                language="python",
+                content="to_sql(if_exists='replace', index=False)",
+                start_line=21,
+                end_line=40,
+            ),
+            CodeChunk(
+                chunk_id="other",
+                file_path="scripts/verify_data.py",
+                language="python",
+                content="verify_tables()",
+                start_line=1,
+                end_line=20,
+            ),
+        ]
+
+        def search(self, query, limit, candidate_limit):
+            raise AssertionError("Named-file retrieval should not search globally.")
+
+    class FakeReranker:
+        def rerank(self, query, candidates, limit):
+            assert limit == 2
+            return candidates
+
+    result = main.retrieve_relevant_chunks(
+        FakeHybrid(),
+        FakeReranker(),
+        "Explain scripts/database_load.py",
+        "Explain scripts/database_load.py",
+    )
+
+    assert [chunk["chunk_id"] for chunk in result] == [
+        "target-1",
+        "target-2",
+    ]
+
+
+def test_unique_filename_basename_targets_file_chunks():
+    class FakeHybrid:
+        chunks = [
+            CodeChunk(
+                chunk_id="target",
+                file_path="scripts/database_load.py",
+                language="python",
+                content="load_database()",
+                start_line=1,
+                end_line=10,
+            ),
+            CodeChunk(
+                chunk_id="other",
+                file_path="scripts/verify_data.py",
+                language="python",
+                content="verify_data()",
+                start_line=1,
+                end_line=10,
+            ),
+        ]
+
+        def search(self, query, limit, candidate_limit):
+            raise AssertionError("Unique basename should target the file.")
+
+    class FakeReranker:
+        def rerank(self, query, candidates, limit):
+            return candidates
+
+    result = main.retrieve_relevant_chunks(
+        FakeHybrid(),
+        FakeReranker(),
+        "What does database_load.py do?",
+        "What does database_load.py do?",
+    )
+
+    assert [chunk["file_path"] for chunk in result] == [
+        "scripts/database_load.py",
+    ]
 
 
 def test_project_overview_retrieval_covers_distinct_facets():

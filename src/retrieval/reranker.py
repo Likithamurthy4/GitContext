@@ -1,5 +1,51 @@
 
 from sentence_transformers import CrossEncoder
+from transformers import PreTrainedTokenizerBase
+
+
+def _candidate_windows(
+    query: str,
+    candidate_text: str,
+    tokenizer: PreTrainedTokenizerBase,
+) -> list[str]:
+    """Split long candidate text so reranking can see its full content."""
+
+    max_length = tokenizer.model_max_length
+    query_tokens = tokenizer.encode(
+        query,
+        add_special_tokens=False,
+    )
+    special_tokens = tokenizer.num_special_tokens_to_add(pair=True)
+    available_tokens = max_length - len(query_tokens) - special_tokens
+
+    if available_tokens < 1:
+        return [candidate_text]
+
+    candidate_tokens = tokenizer.encode(
+        candidate_text,
+        add_special_tokens=False,
+    )
+
+    if len(candidate_tokens) <= available_tokens:
+        return [candidate_text]
+
+    window_size = max(1, available_tokens - min(16, available_tokens // 4))
+    step = max(1, window_size * 3 // 4)
+    windows = []
+
+    for start in range(0, len(candidate_tokens), step):
+        window_tokens = candidate_tokens[start:start + window_size]
+        windows.append(
+            tokenizer.decode(
+                window_tokens,
+                skip_special_tokens=True,
+                clean_up_tokenization_spaces=False,
+            )
+        )
+        if start + window_size >= len(candidate_tokens):
+            break
+
+    return windows
 
 
 class CodeReranker:
@@ -24,17 +70,27 @@ class CodeReranker:
         if not candidates or limit <= 0:
             return []
 
-        pairs = [
-            (
-                query,
+        pairs = []
+        pair_candidate_indices = []
+
+        for index, item in enumerate(candidates):
+            candidate_text = (
                 f"File: {item['file_path']}\n"
                 f"Language: {item['language']}\n"
-                f"Code:\n{item['content']}",
+                f"Code:\n{item['content']}"
             )
-            for item in candidates
-        ]
+            for window in _candidate_windows(
+                query,
+                candidate_text,
+                self.model.tokenizer,
+            ):
+                pairs.append((query, window))
+                pair_candidate_indices.append(index)
 
-        scores = self.model.predict(pairs)
+        window_scores = self.model.predict(pairs)
+        scores = [float("-inf")] * len(candidates)
+        for index, score in zip(pair_candidate_indices, window_scores):
+            scores[index] = max(scores[index], float(score))
 
         # Preserve the original hybrid ranking.
         hybrid_ranked = sorted(
