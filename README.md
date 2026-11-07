@@ -97,6 +97,14 @@ To follow service logs:
 docker compose logs -f
 ```
 
+Retrieval diagnostics are written by the backend for each question. They show
+hybrid candidates, reranked and dropped chunks, and the file/line ranges and
+content sizes sent to Gemini without logging source code. To focus on them:
+
+```powershell
+docker compose logs -f backend
+```
+
 To stop the services without deleting indexed data:
 
 ```powershell

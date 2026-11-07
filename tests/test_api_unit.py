@@ -148,6 +148,58 @@ def test_project_overview_retrieval_covers_distinct_facets():
     assert len(result) == 6
 
 
+def test_retrieval_diagnostics_show_candidates_dropped_and_llm_context(capsys):
+    candidates = [
+        {
+            "chunk_id": "candidate-1",
+            "file_path": "src/first.py",
+            "start_line": 1,
+            "end_line": 5,
+            "content": "first candidate code",
+            "hybrid_score": 0.02,
+        },
+        {
+            "chunk_id": "candidate-2",
+            "file_path": "src/second.py",
+            "start_line": 10,
+            "end_line": 15,
+            "content": "second candidate code",
+            "hybrid_score": 0.01,
+        },
+    ]
+
+    class FakeHybrid:
+        def search(self, query, limit, candidate_limit):
+            return candidates
+
+    class FakeReranker:
+        def rerank(self, query, retrieved, limit):
+            return [
+                {
+                    **retrieved[1],
+                    "rerank_score": 0.9,
+                    "hybrid_rank": 2,
+                    "reranker_rank": 1,
+                }
+            ]
+
+    selected = main.retrieve_relevant_chunks(
+        FakeHybrid(),
+        FakeReranker(),
+        "How does request handling work?",
+        "How does request handling work?",
+    )
+    main.log_llm_context(selected)
+    output = capsys.readouterr().out
+
+    assert "[RETRIEVAL DIAGNOSTIC] HYBRID: 2 chunk(s)" in output
+    assert "HYBRID rank=1 chunk=candidate-1 file=src/first.py:1-5" in output
+    assert "[RETRIEVAL DIAGNOSTIC] RERANKED: 1 chunk(s)" in output
+    assert "RERANK_DROPPED rank=1 chunk=candidate-1 file=src/first.py:1-5" in output
+    assert "[LLM CONTEXT] Sending 1 chunk(s) to Gemini." in output
+    assert "S1 chunk=candidate-2 file=src/second.py:10-15 content_chars=21" in output
+
+
 @pytest.fixture(autouse=True)
 def clear_conversation_history():
     main.app.state.conversation_histories = {}
@@ -299,6 +351,7 @@ def test_ask_returns_answer_with_mocked_pipeline(monkeypatch):
 
     assert body["question"] == "How does authentication work?"
     assert body["repository"] == "https://github.com/example/repo"
+    assert body["conversation_id"]
     assert "Authentication is handled" in body["answer"]
     assert body["sources"][0]["file_path"] == "src/auth.py"
 

@@ -290,13 +290,36 @@ def retrieve_relevant_chunks(
             file_chunks,
             limit=len(file_chunks),
         )
-
     if not is_project_overview_question(question):
-        candidates = hybrid.search(
+        retrieval_queries = [
             search_question,
-            limit=12,
-            candidate_limit=20,
+            f"{search_question} function definition def",
+            f"{search_question} function calls caller call site",
+            f"{search_question} subprocess.run script execution",
+        ]
+
+        candidates_by_key = {}
+
+        for retrieval_query in retrieval_queries:
+            results = hybrid.search(
+                retrieval_query,
+                limit=12,
+                candidate_limit=30,
+            )
+
+            for candidate in results:
+                candidates_by_key.setdefault(
+                    chunk_key(candidate),
+                    candidate,
+                )
+
+        candidates = list(candidates_by_key.values())
+
+        print(
+            f"[RETRIEVAL] Multi-query search: "
+            f"{len(candidates)} unique candidates."
         )
+
         return reranker.rerank(
             search_question,
             candidates,

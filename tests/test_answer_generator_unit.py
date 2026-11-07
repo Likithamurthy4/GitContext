@@ -73,6 +73,38 @@ def test_removes_invalid_citations_without_dropping_valid_references():
     assert cited_sources == sources
 
 
+def test_rewrite_question_uses_recent_conversation_history():
+    class FakeModels:
+        prompt = ""
+
+        def generate_content(self, *, model, contents, config):
+            self.prompt = contents
+            return SimpleNamespace(text="Explain database_load.py")
+
+    models = FakeModels()
+    generator = AnswerGenerator.__new__(AnswerGenerator)
+    generator.client = SimpleNamespace(models=models)
+    generator.model = "test-model"
+    history = [
+        {"role": "user", "content": f"old question {index}"}
+        if index % 2 == 0
+        else {"role": "assistant", "content": f"old answer {index}"}
+        for index in range(8)
+    ]
+
+    rewritten = generator.rewrite_question(
+        "Which function does that?",
+        history,
+    )
+
+    assert rewritten == "Explain database_load.py"
+    assert "old question 0" not in models.prompt
+    assert "old answer 1" not in models.prompt
+    assert "old question 2" in models.prompt
+    assert "old answer 7" in models.prompt
+    assert "Which function does that?" in models.prompt
+
+
 def test_generation_allows_complete_answers_and_reports_token_limit(capsys):
     class FakeModels:
         configs = []
@@ -119,6 +151,12 @@ def test_generation_allows_complete_answers_and_reports_token_limit(capsys):
                 "content": "def example(): pass",
             }
         ],
+        conversation_history=[
+            {"role": "user", "content": f"question {index}"}
+            if index % 2 == 0
+            else {"role": "assistant", "content": f"answer {index}"}
+            for index in range(15)
+        ],
     )
 
     assert all(
@@ -131,6 +169,10 @@ def test_generation_allows_complete_answers_and_reports_token_limit(capsys):
         "It validates the input [S1]."
     )
     assert len(models.configs) == 2
+    assert "answer 3" in models.prompts[0]
+    assert "question 14" in models.prompts[0]
+    assert "question 0" not in models.prompts[0]
+    assert "\nassistant: answer 1\n" not in models.prompts[0]
     assert "Already generated answer" in models.prompts[1]
     assert "The repository supports this behavior." in models.prompts[1]
     assert "[LLM] Continuing answer" in capsys.readouterr().out
